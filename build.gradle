@@ -45,7 +45,7 @@ tasks.named('test') {
 }
 
 tasks.named('bootBuildImage') {
-    imageName = "urstory/my-spring-app:1.0"
+    imageName = "eun2ce/app:1.0"
     environment = [
             "BP_JVM_VERSION": "21"
     ]
