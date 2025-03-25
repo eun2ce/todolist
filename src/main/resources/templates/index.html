@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>할 일 앱</title>
+    <link rel="stylesheet" type="text/css" href="/css/style.css"/>
+    <meta charset="UTF-8"/>
+</head>
+<body>
+<div class="container">
+    <h1>Thymeleaf 할 일 앱</h1>
+
+    <!-- 할 일 목록을 표시할 영역 -->
+    <table id="todo-table">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>제목</th>
+            <th>완료 여부</th>
+            <th>작업</th>
+        </tr>
+        </thead>
+        <tbody id="todo-tbody">
+        <!-- 자바스크립트로 동적으로 채움 -->
+        </tbody>
+    </table>
+
+    <!-- 새 할 일 등록 폼 -->
+    <div class="todo-form">
+        <h2>새 할 일 만들기</h2>
+        <label for="new-title">제목:</label>
+        <input type="text" id="new-title" placeholder="할 일을 입력하세요"/>
+        <button id="create-btn">생성</button>
+    </div>
+</div>
+
+<script>
+    // 페이지 로드 후 실행
+    document.addEventListener('DOMContentLoaded', function () {
+        const todoTbody = document.getElementById('todo-tbody');
+        const createBtn = document.getElementById('create-btn');
+        const newTitleInput = document.getElementById('new-title');
+
+        // 1. 목록 불러오기
+        function fetchTodos() {
+            fetch('/api/todos')
+                .then(response => response.json())
+                .then(data => {
+                    // 기존 목록 초기화
+                    todoTbody.innerHTML = '';
+
+                    data.forEach(todo => {
+                        const tr = document.createElement('tr');
+
+                        // ID
+                        const tdId = document.createElement('td');
+                        tdId.textContent = todo.id;
+                        tr.appendChild(tdId);
+
+                        // 제목
+                        const tdTitle = document.createElement('td');
+                        tdTitle.textContent = todo.title;
+                        tr.appendChild(tdTitle);
+
+                        // 완료 여부
+                        const tdCompleted = document.createElement('td');
+                        tdCompleted.textContent = todo.completed ? "예" : "아니오";
+                        tr.appendChild(tdCompleted);
+
+                        // 작업
+                        const tdActions = document.createElement('td');
+
+                        // 완료/해제 버튼
+                        const completeBtn = document.createElement('button');
+                        completeBtn.textContent = todo.completed ? "완료 해제" : "완료";
+                        completeBtn.addEventListener('click', () => {
+                            // PATCH 요청
+                            fetch(`/api/todos/${todo.id}`, {
+                                method: 'PATCH',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({ completed: !todo.completed })
+                            }).then(() => {
+                                fetchTodos(); // 갱신
+                            });
+                        });
+                        tdActions.appendChild(completeBtn);
+
+                        // 삭제 버튼
+                        const deleteBtn = document.createElement('button');
+                        deleteBtn.textContent = "삭제";
+                        deleteBtn.addEventListener('click', () => {
+                            // DELETE 요청
+                            fetch(`/api/todos/${todo.id}`, {
+                                method: 'DELETE'
+                            }).then(() => {
+                                fetchTodos(); // 갱신
+                            });
+                        });
+                        tdActions.appendChild(deleteBtn);
+
+                        tr.appendChild(tdActions);
+
+                        todoTbody.appendChild(tr);
+                    });
+                })
+                .catch(error => {
+                    console.error('할 일 목록 가져오는 중 오류:', error);
+                });
+        }
+
+        // 2. 새 할 일 생성
+        createBtn.addEventListener('click', () => {
+            const title = newTitleInput.value.trim();
+            if (!title) {
+                alert("할 일 제목을 입력하세요.");
+                return;
+            }
+            fetch('/api/todos', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ title: title, completed: false })
+            }).then(() => {
+                newTitleInput.value = ''; // 입력 초기화
+                fetchTodos(); // 목록 갱신
+            }).catch(error => {
+                console.error('새 할 일 생성 중 오류:', error);
+            });
+        });
+
+        // 페이지 최초 로드 시 목록을 불러옴
+        fetchTodos();
+    });
+</script>
+</body>
+</html>
+```
